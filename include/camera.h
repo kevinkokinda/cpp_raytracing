@@ -40,7 +40,8 @@ public:
     
     Vec3 worldToScreen(const Vec3& worldPos) const {
         Vec3 toPoint = worldPos - position;
-        double distance = toPoint.dot(w);
+        Vec3 forward = -w;
+        double distance = toPoint.dot(forward);
         
         if (distance <= 0) return Vec3(-1, -1, -1);
         

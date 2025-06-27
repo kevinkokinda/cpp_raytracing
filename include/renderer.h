@@ -66,6 +66,10 @@ public:
     void setParticlesEnabled(bool enabled) { enableParticles = enabled; }
     void setDepthOfFieldEnabled(bool enabled) { enableDepthOfField = enabled; }
     void setMotionBlurEnabled(bool enabled) { enableMotionBlur = enabled; }
+    bool isPostProcessingEnabled() const { return enablePostProcessing; }
+    bool isParticlesEnabled() const { return enableParticles; }
+    bool isDepthOfFieldEnabled() const { return enableDepthOfField; }
+    bool isMotionBlurEnabled() const { return enableMotionBlur; }
 
     Vec3 rayColor(const Ray& r, const Scene& scene, int depth) {
         stats.totalRays++;
@@ -111,6 +115,9 @@ public:
                 
                 Vec3 screenPos = camera->worldToScreen(particle.position);
                 if (screenPos.z < 0) continue;
+                if (screenPos.x < 0.0 || screenPos.x > 1.0 || screenPos.y < 0.0 || screenPos.y > 1.0) {
+                    continue;
+                }
                 
                 int x = static_cast<int>(screenPos.x * width);
                 int y = static_cast<int>(screenPos.y * height);
@@ -150,7 +157,6 @@ public:
         auto camera = scene.getActiveCamera();
         if (!camera) return;
         
-        #pragma omp parallel for schedule(dynamic)
         for (int j = 0; j < height; ++j) {
             for (int i = 0; i < width; ++i) {
                 Vec3 color(0, 0, 0);
@@ -234,7 +240,6 @@ public:
                 
                 output << "\033[38;2;" << r << ";" << g << ";" << b << "m";
                 
-                double intensity = (color.x + color.y + color.z) / 3.0;
                 double luminance = 0.299 * color.x + 0.587 * color.y + 0.114 * color.z;
                 
                 luminance = clamp(luminance, 0.0, 1.0);

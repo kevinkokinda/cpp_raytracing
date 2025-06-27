@@ -13,6 +13,7 @@
 #include <string>
 #include <unordered_map>
 #include <functional>
+#include <algorithm>
 
 class SceneNode {
 public:
@@ -246,8 +247,8 @@ private:
     
 public:
     Scene() : rootNode(std::make_shared<SceneNode>("Root")),
-              ambientLight(0.1, 0.1, 0.1), fogColor(0.5, 0.6, 0.7), fogDensity(0.0),
-              physics(std::make_shared<PhysicsEngine>()) {}
+              physics(std::make_shared<PhysicsEngine>()),
+              ambientLight(0.1, 0.1, 0.1), fogColor(0.5, 0.6, 0.7), fogDensity(0.0) {}
     
     std::shared_ptr<SceneNode> getRoot() { return rootNode; }
     
@@ -268,7 +269,11 @@ public:
             
             if (auto phys = std::dynamic_pointer_cast<PhysicsNode>(node)) {
                 if (phys->rigidBody) {
-                    physics->addBody(phys->rigidBody);
+                    if (auto celestial = std::dynamic_pointer_cast<CelestialBody>(phys->rigidBody)) {
+                        physics->addCelestialBody(celestial);
+                    } else {
+                        physics->addBody(phys->rigidBody);
+                    }
                 }
             }
         } else if (auto light = std::dynamic_pointer_cast<LightNode>(node)) {
@@ -367,8 +372,8 @@ public:
         return hitAnything;
     }
     
-    Vec3 computeLighting(const Vec3& point, const Vec3& normal, const Vec3& viewDir,
-                        const Material* mat, int depth = 0) const {
+    Vec3 computeLighting(const Vec3& point, const Vec3& normal, const Vec3& /*viewDir*/,
+                        const Material* /*mat*/, int /*depth*/ = 0) const {
         Vec3 result = ambientLight;
         
         for (const auto& light : lights) {
@@ -437,8 +442,6 @@ public:
         auto sunNode = std::make_shared<PhysicsNode>("Sun", sunGeom, scene->getMaterial("sun"), sun);
         scene->addNode(sunNode);
         
-        scene->getPhysics()->addCelestialBody(sun);
-        
         auto earth = std::make_shared<CelestialBody>("Earth", CelestialBody::PLANET, Vec3(20,0,0), 5.972e24, 1.5);
         earth->orbitalRadius = 20;
         earth->orbitalPeriod = 365;
@@ -446,8 +449,6 @@ public:
         auto earthGeom = std::make_shared<Sphere>(earth->position, earth->radius);
         auto earthNode = std::make_shared<PhysicsNode>("Earth", earthGeom, scene->getMaterial("earth"), earth);
         scene->addNode(earthNode);
-        scene->getPhysics()->addCelestialBody(earth);
-        
         auto moon = std::make_shared<CelestialBody>("Moon", CelestialBody::MOON, Vec3(23,0,0), 7.34e22, 0.5);
         moon->orbitalRadius = 3;
         moon->orbitalPeriod = 27.3;
@@ -455,8 +456,6 @@ public:
         auto moonGeom = std::make_shared<Sphere>(moon->position, moon->radius);
         auto moonNode = std::make_shared<PhysicsNode>("Moon", moonGeom, scene->getMaterial("moon"), moon);
         scene->addNode(moonNode);
-        scene->getPhysics()->addCelestialBody(moon);
-        
         auto mars = std::make_shared<CelestialBody>("Mars", CelestialBody::PLANET, Vec3(30,0,0), 6.39e23, 1.2);
         mars->orbitalRadius = 30;
         mars->orbitalPeriod = 687;
@@ -464,8 +463,6 @@ public:
         auto marsGeom = std::make_shared<Sphere>(mars->position, mars->radius);
         auto marsNode = std::make_shared<PhysicsNode>("Mars", marsGeom, scene->getMaterial("mars"), mars);
         scene->addNode(marsNode);
-        scene->getPhysics()->addCelestialBody(mars);
-        
         auto particleSystem = std::make_shared<ParticleSystem>(5000);
         auto starfield = ParticleEffects::createStarfield(Vec3(0,0,0), 100);
         particleSystem->addEmitter(starfield);

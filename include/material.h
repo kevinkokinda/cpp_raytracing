@@ -16,17 +16,16 @@ public:
     
     Lambertian(const Vec3& a) : albedo(a) {}
     
-    bool scatter(const Ray& rayIn, const HitRecord& rec, Vec3& attenuation, Ray& scattered) const override {
-        static std::random_device rd;
-        static std::mt19937 gen(rd());
-        static std::uniform_real_distribution<> dis(-1.0, 1.0);
+    bool scatter(const Ray& /*rayIn*/, const HitRecord& rec, Vec3& attenuation, Ray& scattered) const override {
+        thread_local std::mt19937 gen(std::random_device{}());
+        thread_local std::uniform_real_distribution<> dis(-1.0, 1.0);
         
         Vec3 randomInSphere;
         do {
             randomInSphere = Vec3(dis(gen), dis(gen), dis(gen));
         } while (randomInSphere.lengthSquared() >= 1.0);
         
-        Vec3 scatterDirection = rec.normal + randomInSphere.normalize();
+        Vec3 scatterDirection = rec.normal + randomInSphere.normalized();
         if (scatterDirection.nearZero()) {
             scatterDirection = rec.normal;
         }
@@ -45,12 +44,11 @@ public:
     Metal(const Vec3& a, double f) : albedo(a), fuzz(f < 1 ? f : 1) {}
     
     bool scatter(const Ray& rayIn, const HitRecord& rec, Vec3& attenuation, Ray& scattered) const override {
-        Vec3 reflected = reflect(rayIn.direction.normalize(), rec.normal);
+        Vec3 reflected = reflect(rayIn.direction.normalized(), rec.normal);
         
         if (fuzz > 0) {
-            static std::random_device rd;
-            static std::mt19937 gen(rd());
-            static std::uniform_real_distribution<> dis(-1.0, 1.0);
+            thread_local std::mt19937 gen(std::random_device{}());
+            thread_local std::uniform_real_distribution<> dis(-1.0, 1.0);
             
             Vec3 randomInSphere;
             do {
@@ -78,7 +76,7 @@ public:
     
     Emissive(const Vec3& c, double i = 1.0) : color(c), intensity(i) {}
     
-    bool scatter(const Ray& rayIn, const HitRecord& rec, Vec3& attenuation, Ray& scattered) const override {
+    bool scatter(const Ray& /*rayIn*/, const HitRecord& /*rec*/, Vec3& /*attenuation*/, Ray& /*scattered*/) const override {
         return false;
     }
     

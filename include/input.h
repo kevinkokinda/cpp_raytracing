@@ -8,6 +8,8 @@
 #include <termios.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <algorithm>
+#include <cmath>
 
 class Input {
 public:
@@ -48,7 +50,7 @@ private:
     int mouseX, mouseY;
     bool mouseButtons[3];
     
-    static Input* instance;
+    inline static Input* instance = nullptr;
     
     void enableRawMode() {
         if (rawModeEnabled) return;
@@ -143,6 +145,9 @@ public:
     
     void update() {
         previousKeyStates = keyStates;
+        for (auto& pair : keyStates) {
+            pair.second = false;
+        }
         
         char buffer[16];
         int bytesRead;
@@ -167,8 +172,10 @@ public:
             }
         }
         
-        for (auto& pair : keyStates) {
-            if (!pair.second && previousKeyStates[pair.first]) {
+        for (const auto& pair : previousKeyStates) {
+            auto it = keyStates.find(pair.first);
+            bool currentlyPressed = (it != keyStates.end()) && it->second;
+            if (pair.second && !currentlyPressed) {
                 handleKeyRelease(pair.first);
             }
         }
@@ -250,8 +257,6 @@ private:
     }
 };
 
-Input* Input::instance = nullptr;
-
 class CameraController {
 private:
     Vec3 position;
@@ -276,6 +281,8 @@ public:
           input(in) {}
     
     void update(double dt) {
+        if (!input) return;
+
         Vec3 moveDir(0, 0, 0);
         Vec3 rotateDir(0, 0, 0);
         
@@ -302,7 +309,7 @@ public:
         }
         
         if (moveDir.lengthSquared() > 0) {
-            moveDir.normalize();
+            moveDir = moveDir.normalized();
             
             double yaw = rotation.y * M_PI / 180.0;
             Vec3 forward(-sin(yaw), 0, -cos(yaw));

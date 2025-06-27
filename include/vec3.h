@@ -20,10 +20,14 @@ public:
     Vec3& operator*=(double t) { x *= t; y *= t; z *= t; return *this; }
     Vec3& operator/=(double t) { x /= t; y /= t; z /= t; return *this; }
 
-    double length() const { return sqrt(x*x + y*y + z*z); }
+    double length() const { return std::sqrt(x*x + y*y + z*z); }
     double lengthSquared() const { return x*x + y*y + z*z; }
-    Vec3 normalize() const { return *this / length(); }
-    Vec3 normalized() const { return normalize(); }
+    Vec3 normalized() const {
+        const double len = length();
+        if (len < 1e-12) return Vec3(0, 0, 0);
+        return *this / len;
+    }
+    Vec3 normalize() const { return normalized(); }
     double dot(const Vec3& v) const { return x*v.x + y*v.y + z*v.z; }
     Vec3 cross(const Vec3& v) const { 
         return Vec3(y*v.z - z*v.y, z*v.x - x*v.z, x*v.y - y*v.x); 
@@ -35,7 +39,7 @@ public:
     
     bool nearZero() const {
         const double eps = 1e-8;
-        return (fabs(x) < eps) && (fabs(y) < eps) && (fabs(z) < eps);
+        return (std::fabs(x) < eps) && (std::fabs(y) < eps) && (std::fabs(z) < eps);
     }
 
     friend std::ostream& operator<<(std::ostream& os, const Vec3& v) {

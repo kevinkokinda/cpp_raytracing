@@ -3,6 +3,8 @@
 #include <thread>
 #include <chrono>
 #include <iomanip>
+#include <random>
+#include <cmath>
 #include "scene.h"
 #include "renderer.h"
 #include "input.h"
@@ -25,7 +27,7 @@ private:
     
 public:
     Application(int width = 120, int height = 40) 
-        : windowWidth(width), windowHeight(height), running(true), time(0), deltaTime(0.016) {
+        : running(true), time(0), deltaTime(0.016), windowWidth(width), windowHeight(height) {
         
         input = std::make_shared<Input>();
         renderer = std::make_shared<Renderer>(width, height, 8, 2);
@@ -150,7 +152,7 @@ public:
         particleSystem->addEmitter(saturnRing);
         
         auto cometTail = ParticleEffects::createCometTail(comet->position);
-        cometNode->updateCallback = [cometTail, comet](double dt) {
+        cometNode->updateCallback = [cometTail, comet](double /*dt*/) {
             cometTail->position = comet->position;
             Vec3 toSun = -comet->position.normalized();
             cometTail->direction = -toSun;
@@ -200,16 +202,16 @@ public:
                         running = false;
                         break;
                     case Input::KEY_1:
-                        renderer->setPostProcessingEnabled(!renderer->getStats().totalRays);
+                        renderer->setPostProcessingEnabled(!renderer->isPostProcessingEnabled());
                         break;
                     case Input::KEY_2:
-                        renderer->setParticlesEnabled(!renderer->getStats().particlesRendered);
+                        renderer->setParticlesEnabled(!renderer->isParticlesEnabled());
                         break;
                     case Input::KEY_3:
-                        renderer->setDepthOfFieldEnabled(!renderer->getStats().totalRays);
+                        renderer->setDepthOfFieldEnabled(!renderer->isDepthOfFieldEnabled());
                         break;
                     case Input::KEY_4:
-                        renderer->setMotionBlurEnabled(!renderer->getStats().totalRays);
+                        renderer->setMotionBlurEnabled(!renderer->isMotionBlurEnabled());
                         break;
                     case Input::KEY_P:
                         scene->getPhysics()->setTimeScale(
@@ -234,7 +236,7 @@ public:
     
     void focusOnPlanet(const std::string& planetName) {
         auto node = scene->findNode(planetName);
-        if (node) {
+        if (node && cameraController) {
             cameraController->setTarget(node->worldPosition);
             cameraController->setOrbitDistance(10.0);
         }
@@ -266,6 +268,15 @@ public:
         input->startCapture();
         
         std::cout << "\033[?25l";
+
+        struct TerminalGuard {
+            Input* in;
+            ~TerminalGuard() {
+                std::cout << "\033[?25h";
+                std::cout << "\033[2J\033[H";
+                if (in) in->stopCapture();
+            }
+        } guard{input.get()};
         
         auto lastFrameTime = std::chrono::high_resolution_clock::now();
         
@@ -285,11 +296,6 @@ public:
                 );
             }
         }
-        
-        std::cout << "\033[?25h";
-        std::cout << "\033[2J\033[H";
-        
-        input->stopCapture();
     }
 };
 

@@ -1,0 +1,16 @@
+build/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+compile_commands.json
+Makefile
+
+raytracer
+solar_system
+solar_sim_simple
+
+*.o
+*.obj
+*.so
+*.a
+*.out

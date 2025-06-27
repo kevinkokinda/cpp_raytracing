@@ -6,6 +6,7 @@
 #include <random>
 #include <memory>
 #include <functional>
+#include <cmath>
 
 class Particle {
 public:
@@ -108,7 +109,7 @@ public:
         randomDir.x += dist(rng) * spread;
         randomDir.y += dist(rng) * spread;
         randomDir.z += dist(rng) * spread;
-        randomDir.normalize();
+        randomDir = randomDir.normalized();
         
         double vel = speed + dist(rng) * speedVariation;
         particle.velocity = randomDir * vel;
@@ -155,7 +156,7 @@ private:
     
 public:
     ParticleSystem(int maxCount = 10000) 
-        : maxParticles(maxCount), activeParticles(0), randomGen(std::random_device{}()) {
+        : randomGen(std::random_device{}()), maxParticles(maxCount), activeParticles(0) {
         particles.resize(maxParticles);
     }
     
@@ -189,6 +190,9 @@ public:
                 emitter->burst = false;
             } else {
                 emitter->emissionTimer += dt;
+                if (emitter->emissionRate <= 0.0) {
+                    continue;
+                }
                 
                 double spawnInterval = 1.0 / emitter->emissionRate;
                 while (emitter->emissionTimer >= spawnInterval) {

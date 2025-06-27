@@ -5,9 +5,13 @@
 #include <vector>
 #include <memory>
 #include <cmath>
+#include <string>
+#include <algorithm>
 
 class RigidBody {
 public:
+    virtual ~RigidBody() = default;
+
     Vec3 position;
     Vec3 velocity;
     Vec3 acceleration;
@@ -148,13 +152,14 @@ private:
     
     int solverIterations;
     double restitutionThreshold;
+    double simulationTime;
     
 public:
     double timeScale;
     PhysicsEngine()
         : gravitationalConstant(6.67430e-11), globalGravity(0, -9.81, 0),
-          timeScale(1.0), damping(0.999), solverIterations(10),
-          restitutionThreshold(1.0) {}
+          damping(0.999), solverIterations(10), restitutionThreshold(1.0),
+          simulationTime(0.0), timeScale(1.0) {}
     
     void addBody(std::shared_ptr<RigidBody> body) {
         bodies.push_back(body);
@@ -236,7 +241,7 @@ public:
         
         Vec3 tangent = relativeVelocity - col.normal * velocityAlongNormal;
         if (tangent.lengthSquared() > 0.0001) {
-            tangent.normalize();
+            tangent = tangent.normalized();
             double jt = -relativeVelocity.dot(tangent);
             jt /= 1/a->mass + 1/b->mass;
             
@@ -273,11 +278,13 @@ public:
         }
     }
     
-    void updateOrbitalMechanics(double time) {
+    void updateOrbitalMechanics(double time, double dt) {
         for (auto& body : celestialBodies) {
             if (body->parent != nullptr && body->orbitalRadius > 0) {
                 Vec3 newPos = body->getOrbitalPosition(time);
-                body->velocity = (newPos - body->position) / 0.016;
+                if (dt > 0.0) {
+                    body->velocity = (newPos - body->position) / dt;
+                }
                 body->position = newPos;
             }
         }
@@ -285,6 +292,7 @@ public:
     
     void step(double dt) {
         double scaledDt = dt * timeScale;
+        simulationTime += scaledDt;
         
         applyGravity();
         
@@ -295,7 +303,7 @@ public:
         
         detectAndResolveCollisions();
         
-        updateOrbitalMechanics(scaledDt);
+        updateOrbitalMechanics(simulationTime, scaledDt);
     }
     
     double getTotalEnergy() const {
