@@ -11,7 +11,7 @@ public:
     std::shared_ptr<Material> material;
 
     Sphere() {}
-    Sphere(const Vec3& center, double radius, std::shared_ptr<Material> mat) 
+    Sphere(const Vec3& center, double radius, std::shared_ptr<Material> mat = nullptr) 
         : center(center), radius(radius), material(mat) {}
 
     bool hit(const Ray& ray, double tMin, double tMax, HitRecord& rec) const override {
@@ -33,9 +33,10 @@ public:
 
         rec.t = root;
         rec.point = ray.at(rec.t);
+        rec.p = rec.point;
         Vec3 outwardNormal = (rec.point - center) / radius;
         rec.setFaceNormal(ray, outwardNormal);
-        rec.material = material;
+        rec.material = material.get();
 
         return true;
     }

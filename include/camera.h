@@ -37,4 +37,30 @@ public:
     Ray getRay(double s, double t) const {
         return Ray(position, lowerLeftCorner + s * horizontal + t * vertical - position);
     }
+    
+    Vec3 worldToScreen(const Vec3& worldPos) const {
+        Vec3 toPoint = worldPos - position;
+        double distance = toPoint.dot(w);
+        
+        if (distance <= 0) return Vec3(-1, -1, -1);
+        
+        double x = toPoint.dot(u) / distance;
+        double y = toPoint.dot(v) / distance;
+        
+        double theta = fov * M_PI / 180.0;
+        double halfHeight = tan(theta / 2.0);
+        double halfWidth = aspectRatio * halfHeight;
+        
+        double screenX = (x + halfWidth) / (2.0 * halfWidth);
+        double screenY = (y + halfHeight) / (2.0 * halfHeight);
+        
+        return Vec3(screenX, screenY, distance);
+    }
+    
+    Vec3 lookFrom;
+    Vec3 lookAt;
+    Vec3 vup;
+    double viewportHeight;
+    double viewportWidth;
+    Vec3 origin;
 };
